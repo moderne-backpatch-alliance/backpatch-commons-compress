@@ -20,7 +20,10 @@ package org.apache.commons.compress.archivers.sevenz;
 
 import org.junit.Test;
 
+import java.io.IOException;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 
 /**
@@ -84,5 +87,28 @@ public class FolderTest {
 
     }
 
+
+    @Test(timeout = 30000)
+    public void testGetOrderedCodersRejectsCoderUsedTwice() {
+
+        final Folder folder = new Folder();
+        folder.coders = new Coder[] { new Coder(), new Coder() };
+        folder.packedStreams = new long[] { 0 };
+        final BindPair first = new BindPair();
+        first.inIndex = 1;
+        first.outIndex = 0;
+        final BindPair second = new BindPair();
+        second.inIndex = 0;
+        second.outIndex = 1;
+        folder.bindPairs = new BindPair[] { first, second };
+
+        try {
+            folder.getOrderedCoders();
+            fail("expected an IOException");
+        } catch (final IOException expected) {
+            assertEquals("folder uses the same coder more than once in coder chain", expected.getMessage());
+        }
+
+    }
 
 }

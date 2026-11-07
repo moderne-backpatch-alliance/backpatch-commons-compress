@@ -17,6 +17,7 @@
  */
 package org.apache.commons.compress.archivers.sevenz;
 
+import java.io.IOException;
 import java.util.LinkedList;
 
 /**
@@ -51,10 +52,13 @@ class Folder {
      * only support single input stream decoders), the second reads
      * from the output of the first and so on.</p>
      */
-    Iterable<Coder> getOrderedCoders() {
+    Iterable<Coder> getOrderedCoders() throws IOException {
         final LinkedList<Coder> l = new LinkedList<>();
         int current = (int) packedStreams[0]; // more that 2^31 coders?
         while (current != -1) {
+            if (l.contains(coders[current])) {
+                throw new IOException("folder uses the same coder more than once in coder chain");
+            }
             l.addLast(coders[current]);
             final int pair = findBindPairForOutStream(current);
             current = pair != -1 ? (int) bindPairs[pair].inIndex : -1;
