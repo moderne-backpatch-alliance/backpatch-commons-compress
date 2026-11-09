@@ -29,12 +29,13 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.Set;
 import java.util.Stack;
 
 /**
@@ -423,7 +424,8 @@ public class DumpArchiveInputStream extends ArchiveInputStream {
         // build the stack of elements. It's possible that we're
         // still missing an intermediate value and if so we
         final Stack<String> elements = new Stack<>();
-        final BitSet visited = new BitSet();
+        // INO entries are unsigned (uint32_t)
+        final Set<Integer> visited = new HashSet<>();
         Dirent dirent = null;
 
         for (int i = entry.getIno();; i = dirent.getParentIno()) {
@@ -431,12 +433,12 @@ public class DumpArchiveInputStream extends ArchiveInputStream {
                 elements.clear();
                 break;
             }
-            if (visited.get(i)) {
+            if (visited.contains(i)) {
                 throw new DumpArchiveException("Duplicate node " + i);
             }
 
             dirent = names.get(i);
-            visited.set(i);
+            visited.add(i);
             elements.push(dirent.getName());
 
             if (dirent.getIno() == dirent.getParentIno()) {

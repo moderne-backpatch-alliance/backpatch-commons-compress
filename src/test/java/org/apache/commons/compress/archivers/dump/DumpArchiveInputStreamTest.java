@@ -22,6 +22,9 @@ import static org.junit.Assert.*;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Map;
 
 import org.apache.commons.compress.AbstractTestCase;
 import org.apache.commons.compress.archivers.ArchiveEntry;
@@ -117,6 +120,26 @@ public class DumpArchiveInputStreamTest extends AbstractTestCase {
             } catch (final DumpArchiveException ex) {
                 // expected
             }
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void getPathAcceptsInodeWithHighBitSet() throws Exception {
+        final int ino = 0x80000002;
+        final byte[] header = new byte[1024];
+        header[20] = 2;
+        header[23] = (byte) 0x80;
+        try (FileInputStream in = new FileInputStream(getFile("bla.dump"));
+             DumpArchiveInputStream archive = new DumpArchiveInputStream(in)) {
+            final Field names = DumpArchiveInputStream.class.getDeclaredField("names");
+            names.setAccessible(true);
+            ((Map<Integer, Dirent>) names.get(archive)).put(ino, new Dirent(ino, ino, 4, "root"));
+            final Method getPath = DumpArchiveInputStream.class.getDeclaredMethod("getPath", DumpArchiveEntry.class);
+            getPath.setAccessible(true);
+            final DumpArchiveEntry entry = DumpArchiveEntry.parse(header);
+            assertEquals(ino, entry.getIno());
+            assertEquals("root", getPath.invoke(archive, entry));
         }
     }
 
