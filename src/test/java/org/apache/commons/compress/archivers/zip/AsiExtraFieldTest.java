@@ -20,6 +20,9 @@ package org.apache.commons.compress.archivers.zip;
 
 import static org.junit.Assert.*;
 
+import java.util.zip.CRC32;
+import java.util.zip.ZipException;
+
 import org.junit.Test;
 
 /**
@@ -156,5 +159,34 @@ public class AsiExtraFieldTest implements UnixStat {
         assertEquals(s1.getLinkedFile(), s2.getLinkedFile());
         assertEquals(s1.getMode(), s2.getMode());
         assertEquals(s1.isDirectory(), s2.isDirectory());
+    }
+
+    @Test
+    public void testRejectsNegativeLinkLength() {
+        assertBadLinkLength(0xFF, 0xFF, 0xFF, 0xFF, -1);
+    }
+
+    @Test
+    public void testRejectsLinkLengthBiggerThanField() {
+        assertBadLinkLength(0xFF, 0xFF, 0xFF, 0x7F, Integer.MAX_VALUE);
+    }
+
+    private static void assertBadLinkLength(final int b0, final int b1, final int b2, final int b3, final int length) {
+        final byte[] content = {
+            0123, (byte) 0x80,
+            (byte) b0, (byte) b1, (byte) b2, (byte) b3,
+            5, 0, 6, 0
+        };
+        final CRC32 crc = new CRC32();
+        crc.update(content);
+        final byte[] data = new byte[content.length + 4];
+        System.arraycopy(ZipLong.getBytes(crc.getValue()), 0, data, 0, 4);
+        System.arraycopy(content, 0, data, 4, content.length);
+        try {
+            new AsiExtraField().parseFromLocalFileData(data, 0, data.length);
+            fail("should raise a bad link length exception");
+        } catch (final ZipException expected) {
+            assertEquals("Bad symbolic link name length " + length + " in ASI extra field", expected.getMessage());
+        }
     }
 }
