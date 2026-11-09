@@ -25,10 +25,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -557,6 +560,53 @@ public class SevenZFileTest extends AbstractTestCase {
                 sevenZFile.getInputStream(nonExistEntry);
             }
         }
+    }
+
+    @Test
+    public void testNoOOMOnCorruptedHeader() throws IOException {
+        final List<Path> testFiles = new ArrayList<>();
+        testFiles.add(getFile("COMPRESS-542-1.7z").toPath());
+        testFiles.add(getFile("COMPRESS-542-2.7z").toPath());
+        testFiles.add(getFile("COMPRESS-542-endheadercorrupted.7z").toPath());
+        testFiles.add(getFile("COMPRESS-542-endheadercorrupted2.7z").toPath());
+
+        for (final Path file : testFiles) {
+            try (SevenZFile sevenZFile = new SevenZFile(Files.newByteChannel(file))) {
+                fail("Expected IOException: start header corrupt and unable to guess end header");
+            } catch (final IOException e) {
+                assertEquals("Start header corrupt and unable to guess end header", e.getMessage());
+            }
+        }
+    }
+
+    @Test
+    public void memoryLimitAppliesToArchiveMetadata() throws IOException {
+        final File archive = new File(dir, "metadata.7z");
+        try (SevenZOutputFile out = new SevenZOutputFile(archive)) {
+            for (int i = 0; i < 100; i++) {
+                final SevenZArchiveEntry entry = new SevenZArchiveEntry();
+                entry.setName("entry-" + i);
+                out.putArchiveEntry(entry);
+                out.closeArchiveEntry();
+            }
+        }
+        try (SevenZFile sevenZFile = new SevenZFile(archive)) {
+            assertEquals(100, countEntries(sevenZFile));
+        }
+        try (SevenZFile sevenZFile = new SevenZFile(archive,
+            SevenZFileOptions.builder().withMaxMemoryLimitInKb(1).build())) {
+            fail("Expected a MemoryLimitException while parsing the metadata");
+        } catch (final MemoryLimitException expected) {
+            assertEquals(1, expected.getMemoryLimitInKb());
+        }
+    }
+
+    private static int countEntries(final SevenZFile sevenZFile) throws IOException {
+        int count = 0;
+        while (sevenZFile.getNextEntry() != null) {
+            count++;
+        }
+        return count;
     }
 
     private void test7zUnarchive(final File f, final SevenZMethod m, final byte[] password) throws Exception {
