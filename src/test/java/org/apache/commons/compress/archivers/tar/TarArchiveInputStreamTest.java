@@ -373,6 +373,20 @@ public class TarArchiveInputStreamTest {
         }
     }
 
+    @Test
+    public void paxHeaderValueMustFitIntoHeaderSize() throws Exception {
+        final byte[] record = "30 atime=1321711775.972059463\n".getBytes(CharsetNames.UTF_8);
+        final TarArchiveInputStream tais = new TarArchiveInputStream(new ByteArrayInputStream(new byte[1]));
+        assertEquals("1321711775.972059463",
+            tais.parsePaxHeaders(new ByteArrayInputStream(record), null, record.length).get("atime"));
+        try {
+            tais.parsePaxHeaders(new ByteArrayInputStream(record), null, record.length - 1);
+            fail("expected an IOException");
+        } catch (final IOException expected) {
+            assertEquals("Paxheader value size 21 exceeds size of header record", expected.getMessage());
+        }
+    }
+
     private TarArchiveInputStream getTestStream(final String name) {
         return new TarArchiveInputStream(
                 TarArchiveInputStreamTest.class.getResourceAsStream(name));

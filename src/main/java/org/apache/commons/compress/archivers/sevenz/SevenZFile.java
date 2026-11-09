@@ -699,11 +699,12 @@ public class SevenZFile implements Closeable {
             inputStreamStack = new CRC32VerifyingInputStream(inputStreamStack,
                     folder.getUnpackSize(), folder.crc);
         }
-        assertFitsIntoNonNegativeInt("unpackSize", folder.getUnpackSize());
-        final byte[] nextHeader = new byte[(int)folder.getUnpackSize()];
-        try (DataInputStream nextHeaderInputStream = new DataInputStream(inputStreamStack)) {
-            nextHeaderInputStream.readFully(nextHeader);
+        final int unpackSize = assertFitsIntoNonNegativeInt("unpackSize", folder.getUnpackSize());
+        final byte[] nextHeader = IOUtils.readRange(inputStreamStack, unpackSize);
+        if (nextHeader.length < unpackSize) {
+            throw new IOException("premature end of stream");
         }
+        inputStreamStack.close();
         return ByteBuffer.wrap(nextHeader).order(ByteOrder.LITTLE_ENDIAN);
     }
 

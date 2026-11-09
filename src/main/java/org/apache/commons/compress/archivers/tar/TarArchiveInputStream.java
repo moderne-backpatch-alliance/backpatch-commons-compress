@@ -521,7 +521,7 @@ public class TarArchiveInputStream extends ArchiveInputStream {
     }
 
     private void readGlobalPaxHeaders() throws IOException {
-        globalPaxHeaders = parsePaxHeaders(this, globalSparseHeaders);
+        globalPaxHeaders = parsePaxHeaders(this, globalSparseHeaders, entrySize);
         getNextEntry(); // Get the actual file entry
     }
 
@@ -552,7 +552,7 @@ public class TarArchiveInputStream extends ArchiveInputStream {
      */
     private void paxHeaders() throws IOException{
         List<TarArchiveStructSparse> sparseHeaders = new ArrayList<>();
-        final Map<String, String> headers = parsePaxHeaders(this, sparseHeaders);
+        final Map<String, String> headers = parsePaxHeaders(this, sparseHeaders, entrySize);
 
         // for 0.1 PAX Headers
         if (headers.containsKey("GNU.sparse.map")) {
@@ -677,15 +677,22 @@ public class TarArchiveInputStream extends ArchiveInputStream {
      */
     Map<String, String> parsePaxHeaders(final InputStream inputStream, List<TarArchiveStructSparse> sparseHeaders)
         throws IOException {
+        return parsePaxHeaders(inputStream, sparseHeaders, -1);
+    }
+
+    Map<String, String> parsePaxHeaders(final InputStream inputStream, List<TarArchiveStructSparse> sparseHeaders,
+        final long headerSize) throws IOException {
         final Map<String, String> headers = new HashMap<>(globalPaxHeaders);
         Long offset = null;
         // Format is "length keyword=value\n";
+        int totalRead = 0;
         while(true) { // get length
             int ch;
             int len = 0;
             int read = 0;
             while((ch = inputStream.read()) != -1) {
                 read++;
+                totalRead++;
                 if (ch == '\n') { // blank line in header
                     break;
                 } else if (ch == ' '){ // End of length string
@@ -693,15 +700,22 @@ public class TarArchiveInputStream extends ArchiveInputStream {
                     final ByteArrayOutputStream coll = new ByteArrayOutputStream();
                     while((ch = inputStream.read()) != -1) {
                         read++;
+                        totalRead++;
+                        if (totalRead < 0 || (headerSize >= 0 && totalRead >= headerSize)) {
+                            break;
+                        }
                         if (ch == '='){ // end of keyword
                             final String keyword = coll.toString(CharsetNames.UTF_8);
                             // Get rest of entry
                             final int restLen = len - read;
                             if (restLen == 1) { // only NL
                                 headers.remove(keyword);
+                            } else if (headerSize >= 0 && restLen > headerSize - totalRead) {
+                                throw new IOException("Paxheader value size " + restLen
+                                    + " exceeds size of header record");
                             } else {
-                                final byte[] rest = new byte[restLen];
-                                final int got = IOUtils.readFully(inputStream, rest);
+                                final byte[] rest = IOUtils.readRange(inputStream, restLen);
+                                final int got = rest.length;
                                 if (got != restLen) {
                                     throw new IOException("Failed to read "
                                                           + "Paxheader. Expected "
@@ -709,6 +723,7 @@ public class TarArchiveInputStream extends ArchiveInputStream {
                                                           + " bytes, read "
                                                           + got);
                                 }
+                                totalRead += restLen;
                                 // Drop trailing NL
                                 final String value = new String(rest, 0,
                                                           restLen - 1, CharsetNames.UTF_8);

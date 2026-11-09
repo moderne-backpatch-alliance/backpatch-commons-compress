@@ -323,7 +323,7 @@ public class Expander {
         }, new EntryWriter() {
             @Override
             public void writeEntryDataTo(ArchiveEntry entry, OutputStream out) throws IOException {
-                final byte[] buffer = new byte[8024];
+                final byte[] buffer = new byte[8192];
                 int n;
                 while (-1 != (n = archive.read(buffer))) {
                     out.write(buffer, 0, n);

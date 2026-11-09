@@ -22,6 +22,7 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.compress.AbstractTestCase;
 import org.apache.commons.compress.archivers.ArchiveEntry;
@@ -126,6 +127,16 @@ public class ArArchiveInputStreamTest extends AbstractTestCase {
              ArArchiveInputStream archive = new ArArchiveInputStream(in)) {
             archive.close();
             archive.read();
+        }
+    }
+
+    @Test(expected = EOFException.class)
+    public void bsdLongNameCutShortRaisesEof() throws Exception {
+        final String header = "!<arch>\n" + String.format("%-16s%-12s%-6s%-6s%-8s%-10s`\n",
+            "#1/" + Integer.MAX_VALUE, "0", "0", "0", "100644", "0");
+        try (ArArchiveInputStream in = new ArArchiveInputStream(
+                 new ByteArrayInputStream(header.getBytes(StandardCharsets.US_ASCII)))) {
+            in.getNextEntry();
         }
     }
 }
