@@ -1,6 +1,6 @@
 schema: osera-patch-evidence/0.1.0
 producer: moderne
-release: 1.20.1-backpatch-00004
+release: 1.20.1-backpatch-00005
 baseline: v1.20+backpatch.baseline
 fixes:
   - cve: CVE-2021-35515
@@ -34,12 +34,20 @@ fixes:
     basis: adapted
     artifacts:
       - org.apache.commons:commons-compress
-    note: New in this release; ported onto 1.20; fixed at 1.20.1-backpatch-00004 (backpatch-commons-compress@2446556).
+    note: Carried from 1.20.1-backpatch-00004; ported onto 1.20; fixed at 1.20.1-backpatch-00004 (backpatch-commons-compress@2446556).
+  - cve: CVE-2024-25710
+    upstream_fix_url: https://github.com/apache/commons-compress/commit/f64639c6c4e3fc47662c0b3f4572204a0bcf7c3d
+    advisory_url: https://nvd.nist.gov/vuln/detail/CVE-2024-25710
+    patch_commit_url: https://github.com/moderne-backpatch-alliance/backpatch-commons-compress/compare/6478c2e~1...75b39c2
+    basis: adapted
+    artifacts:
+      - org.apache.commons:commons-compress
+    note: New in this release; ported onto 1.20; fixed at 1.20.1-backpatch-00005 (backpatch-commons-compress@6478c2e..75b39c2).
 tests:
-  commit: 2446556deb172375332dba472435303ed5015be2
+  commit: 75b39c27936c711c4e023e1ecf8c3658cf46b438
   command: mvn -B -T1 -Drat.skip=true -Dmaven.test.failure.ignore=true clean test
   runtime: OpenJDK 1.8.0_512 (Zulu) in a linux/arm64 container for the tests, Apache Maven 3.9.16
-  report: commons-compress-1.20.1-backpatch-00004-tests.zip
-  report_sha256: 9ab05a91426bfddd4df5a11005c6ef18750bcafb81c28bc6dd1680f91c0730b4
+  report: commons-compress-1.20.1-backpatch-00005-tests.zip
+  report_sha256: fe39d059a051c3d1a8f44b703ef92fbc695ca8266bd30dbcd8b8bd376c3c772b
   result: pass
-  note: 1188 tests at the patch commit, 9 of them skipped by the suite, 0 failed, 0 errors. Jars built on macOS arm64 with Zulu 1.8.0_382; the suite runs in a Linux container because zstd-jni 1.4.4-7 has no macOS arm64 library.
+  note: 1191 tests at the patch commit, 9 of them skipped by the suite, 0 failed, 0 errors. Jars built on macOS arm64 with Zulu 1.8.0_382; the suite runs in a Linux container because zstd-jni 1.4.4-7 has no macOS arm64 library.
