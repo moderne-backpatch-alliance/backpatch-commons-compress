@@ -1,6 +1,6 @@
 schema: osera-patch-evidence/0.1.0
 producer: moderne
-release: 1.20.1-backpatch-00003
+release: 1.20.1-backpatch-00004
 baseline: v1.20+backpatch.baseline
 fixes:
   - cve: CVE-2021-35515
@@ -26,12 +26,20 @@ fixes:
     basis: adapted
     artifacts:
       - org.apache.commons:commons-compress
-    note: New in this release; ported onto 1.20; fixed at 1.20.1-backpatch-00003 (backpatch-commons-compress@4e239b5..dff6d84).
+    note: Carried from 1.20.1-backpatch-00003; ported onto 1.20; fixed at 1.20.1-backpatch-00003 (backpatch-commons-compress@4e239b5..dff6d84).
+  - cve: CVE-2021-36090
+    upstream_fix_url: https://github.com/advisories/GHSA-mc84-pj99-q6hh
+    advisory_url: https://nvd.nist.gov/vuln/detail/CVE-2021-36090
+    patch_commit_url: https://github.com/moderne-backpatch-alliance/backpatch-commons-compress/commit/2446556
+    basis: adapted
+    artifacts:
+      - org.apache.commons:commons-compress
+    note: New in this release; ported onto 1.20; fixed at 1.20.1-backpatch-00004 (backpatch-commons-compress@2446556).
 tests:
-  commit: dff6d840f20638aec66aebfb8a5b83733a768b2c
+  commit: 2446556deb172375332dba472435303ed5015be2
   command: mvn -B -T1 -Drat.skip=true -Dmaven.test.failure.ignore=true clean test
   runtime: OpenJDK 1.8.0_512 (Zulu) in a linux/arm64 container for the tests, Apache Maven 3.9.16
-  report: commons-compress-1.20.1-backpatch-00003-tests.zip
-  report_sha256: 3e4fb12e543b75f11b0cafda469c1bb624e70c0020719b2abc34350881fa505c
+  report: commons-compress-1.20.1-backpatch-00004-tests.zip
+  report_sha256: 9ab05a91426bfddd4df5a11005c6ef18750bcafb81c28bc6dd1680f91c0730b4
   result: pass
-  note: 1186 tests at the patch commit, 9 of them skipped by the suite, 0 failed, 0 errors. Jars built on macOS arm64 with Zulu 1.8.0_382; the suite runs in a Linux container because zstd-jni 1.4.4-7 has no macOS arm64 library.
+  note: 1188 tests at the patch commit, 9 of them skipped by the suite, 0 failed, 0 errors. Jars built on macOS arm64 with Zulu 1.8.0_382; the suite runs in a Linux container because zstd-jni 1.4.4-7 has no macOS arm64 library.
